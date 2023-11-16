@@ -15,20 +15,29 @@ HEADERS = {
     'X-Mpstats-TOKEN': TOKEN,
     'Content-Type': 'application/json'
 }
+
 T_SHIRT_ID = '192'
-SKU_FIRST_DATE = 60 # Это можно менять, ставим количество дней назад, с какой даты обнаруживать новинки
-TOTAL_SALES = 20 # Это можно менять
+TOP_ID = '185'
+PANTS_ID = '11'
+HOODIE_ID = '1724'
+SWEAT_ID = '159'
+LONG_ID = '217'
+SHORTS_ID = '151'
+JACKETS_ID = '168'
+
+SKU_FIRST_DATE = 8 # Это можно менять, ставим количество дней назад, с какой даты обнаруживать новинки
+TOTAL_SALES = 8 # Это можно менять
 
 # Получаем все нужные нам даты 
 today = dt.datetime.today().date()
 yesterday = (today - dt.timedelta(days=1)).strftime('%Y.%m.%d')
-two_weeks_ago = (today - dt.timedelta(days=14)).strftime('%Y.%m.%d')
 sku_first_date = (today - dt.timedelta(days=SKU_FIRST_DATE+1)).strftime('%Y-%m-%d')
+month_ago = (today - dt.timedelta(days=30)).strftime('%Y.%m.%d')
 
 
-def get_t_shirts():
-    dates_range = f'd1={yesterday}&{two_weeks_ago}'
-    t_shirt_url = f'{URL}subject?{dates_range}&path=' + T_SHIRT_ID
+def get_all_items(cat):
+    dates_range = f'd1={yesterday}&{month_ago}'
+    new_url = f'{URL}subject?{dates_range}&path={cat.id_wb}'
     payload = {
         'startRow': 0,
         'endRow': 5000,
@@ -36,21 +45,21 @@ def get_t_shirts():
                         {  # Фильтр по последней цене
                             'filterType': 'number',
                             'type': 'inRange',
-                            'filter': 1000,
-                            'filterTo': 5000
+                            'filter': int(cat.min_price),
+                            'filterTo': int(cat.max_price)
                         },
                         'days_with_sales':
                         {  # Фильтр по количеству дней с продажами
                             'filterType': 'number',
                             'type': 'greaterThanOrEqual',
-                            'filter': 10                     
+                            'filter': 3                  
                         },
                         'sku_first_date':
                         {  # Чтоб получить только новинки поставим фильтр по SKU_first_date
                             'dateFrom': f'{sku_first_date} 00:00:00',
                             'dateTo': 'null',
                             'filterType': 'date',
-                            'type': 'greaterThan'
+                            'type': 'lessThan'
                         },
                         'sales':
                         {  # Фильтр по количеству продаж
@@ -58,9 +67,9 @@ def get_t_shirts():
                             'type': 'greaterThanOrEqual',
                             'filter': TOTAL_SALES
                         }
-                    },
+                        },
         'sortModel': [{'colId': 'revenue', 'sort': 'desc'}]
     }
-    query = rq.post(t_shirt_url, headers=HEADERS, json=payload).json()
+    query = rq.post(new_url, headers=HEADERS, json=payload).json()
     work_df = pd.DataFrame(query['data'])
     return (work_df.to_dict('records'))

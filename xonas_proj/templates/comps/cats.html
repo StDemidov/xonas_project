@@ -4,24 +4,24 @@
   Выберите категорию
 {% endblock %}
 {% block content %}
-  <div class="d-grid gap-2">
-    <a href="{% url 'comps:update' %}" role="button" class="btn btn-primary">Обновить выгрузку</a>
-  </div>
   <h1 class="pb-2 mb-0">Категории</h1>
   <div class="row">
     {% for category in category_list %}
     <div class="col-9 col-md-3 my-1">
-      <div class="card">
+      <div class="card text-center">
         <img 
           class="img-fluid card-img-top" 
           height="200" width="100"
           src="https://basket-10.wb.ru/vol1492/part149239/149239998/images/c246x328/1.webp"
         >
         <div class="card-body">           
-          <h5 class="card-title">{{ category }} </h5>
-          <a class="mt-3 regular-link" href="/">
-            Поиск
-          </a>
+          <h5 class="card-title mid">{{ category }} </h5>
+          <div class="btn-group">
+            <a href="{% url 'comps:list' category.slug%}?days=8" class="btn btn-primary">8 дней</a>
+            <a href="{% url 'comps:list' category.slug%}?days=14" class="btn btn-primary">14 дней</a>
+            <a href="{% url 'comps:list' category.slug%}?days=21" class="btn btn-primary">21 день</a>
+            <a href="{% url 'comps:list' category.slug%}?days=30" class="btn btn-primary">30 дней</a>
+          </div>
         </div>
       </div>
     </div>

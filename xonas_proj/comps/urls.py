@@ -5,5 +5,5 @@ app_name = 'comps'
 
 urlpatterns = [
     path('', views.cats, name='cats'),
-    path('updatedb/', views.update_db, name='update'),
+    path('list/<slug:category_slug>', views.cat_list, name='list'),
 ]

@@ -1,0 +1,14 @@
+{% load static %}
+<div class="col-6 col-md-4 my-1">
+    <div class="card">
+      <img 
+        class="img-fluid card-img-top" 
+        height="400" width="300"
+        src="https:{{ item.thumb_middle }}"
+      >
+      <div class="card-body">           
+        <h5 class="card-title">{{ item.name }} </h5>
+        <p class="card-title">{{ item.brand }}</p>
+      </div>
+    </div>
+  </div>

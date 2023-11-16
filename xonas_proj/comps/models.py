@@ -17,6 +17,11 @@ class Category(models.Model):
     min_sells = models.PositiveSmallIntegerField(
         verbose_name='Мин. количество продаж в день'
     )
+    id_wb = models.CharField(
+        blank=True,
+        max_length=10,
+        verbose_name='ID для API'
+    )
 
     class Meta:
         verbose_name = 'категория'
