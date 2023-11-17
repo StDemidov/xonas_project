@@ -1,4 +1,5 @@
 {% load static %}
+{% load comps_extras %}
 <div class="col-6 col-md-4 my-1">
     <div class="card">
       <img 
@@ -9,6 +10,12 @@
       <div class="card-body">           
         <h5 class="card-title">{{ item.name }} </h5>
         <p class="card-title">{{ item.brand }}</p>
+        <div class="card-img-overlay">
+          <h3><span class="badge bg-primary">{{ sku_dict|get_from_dict:item.sku_id }} p.</span></h3>
+          <a href="https://www.wildberries.ru/catalog/{{ item.sku_id }}/detail.aspx" class="btn btn-info">WB</a>
+          <a href="https://mpstats.io/wb/item/{{ item.sku_id }}" class="btn btn-info">MP</a>
+        </div>
       </div>
+      
     </div>
-  </div>
+</div>

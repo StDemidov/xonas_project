@@ -4,6 +4,10 @@ import datetime as dt
 import os
 from dotenv import load_dotenv
 
+from django.core.paginator import Paginator
+
+from .models import Sku
+
 load_dotenv()
 
 # Токен из кабинета WB
@@ -16,23 +20,23 @@ HEADERS = {
     'Content-Type': 'application/json'
 }
 
-T_SHIRT_ID = '192'
-TOP_ID = '185'
-PANTS_ID = '11'
-HOODIE_ID = '1724'
-SWEAT_ID = '159'
-LONG_ID = '217'
-SHORTS_ID = '151'
-JACKETS_ID = '168'
-
-SKU_FIRST_DATE = 8 # Это можно менять, ставим количество дней назад, с какой даты обнаруживать новинки
-TOTAL_SALES = 8 # Это можно менять
+SKU_FIRST_DATE = 8
+TOTAL_SALES = 20
 
 # Получаем все нужные нам даты 
 today = dt.datetime.today().date()
-yesterday = (today - dt.timedelta(days=1)).strftime('%Y.%m.%d')
 sku_first_date = (today - dt.timedelta(days=SKU_FIRST_DATE+1)).strftime('%Y-%m-%d')
-month_ago = (today - dt.timedelta(days=30)).strftime('%Y.%m.%d')
+yesterday = (today - dt.timedelta(days=1)).strftime('%Y.%m.%d')
+two_weeks = (today - dt.timedelta(days=15)).strftime('%Y.%m.%d')
+three_weeks = (today - dt.timedelta(days=22)).strftime('%Y.%m.%d')
+month_ago = (today - dt.timedelta(days=31)).strftime('%Y.%m.%d')
+
+
+def get_page_obj(obj_list, request):
+    paginator = Paginator(obj_list, 30)
+    page_number = request.GET.get('page')
+    page_object = paginator.get_page(page_number)
+    return page_object
 
 
 def get_all_items(cat):
@@ -73,3 +77,21 @@ def get_all_items(cat):
     query = rq.post(new_url, headers=HEADERS, json=payload).json()
     work_df = pd.DataFrame(query['data'])
     return (work_df.to_dict('records'))
+
+
+def update_db(cat):
+    items = get_all_items(cat)
+    print(items)
+    model_instances = [Sku(
+        sku_id=record['id'],
+        name=record['name'],
+        brand=record['brand'],
+        thumb=record['thumb'],
+        thumb_middle=record['thumb_middle'],
+        price_graph=','.join(str(x) for x in record['price_graph']),
+        sells_graph=','.join(str(x) for x in record['graph']),
+        stocks_graph=','.join(str(x) for x in record['stocks_graph']),
+        sku_first_date=dt.datetime.strptime(record['sku_first_date'], '%Y-%m-%d'),
+        category=cat,
+    ) for record in items]
+    Sku.objects.bulk_create(model_instances)
