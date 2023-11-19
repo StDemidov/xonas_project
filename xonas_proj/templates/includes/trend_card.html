@@ -10,8 +10,43 @@
       <div class="card-body">           
         <h5 class="card-title">{{ item.name }} </h5>
         <p class="card-title">{{ item.brand }}</p>
+        <p class="card-title">{{ item.sku_first_date }}</p>
+        <div>
+          <canvas id="myChart{{ item.sku_id }}"></canvas>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        
+        <script>
+          var ctx = document.getElementById('myChart' + {{ item.sku_id }});
+        
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+              datasets: [{
+                label: 'Продажи',
+                data: {{ sku_dict|get_sales_graph:item.sku_id }},
+                borderWidth: 1
+              }]
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
+              }
+            }
+          });
+        </script>
         <div class="card-img-overlay">
-          <h3><span class="badge bg-primary">{{ sku_dict|get_from_dict:item.sku_id }} p.</span></h3>
+          <h3><span class="badge bg-primary">{{ sku_dict|get_price:item.sku_id }} p.</span></h3>
+          {% if sku_dict|get_stocks_tag:item.sku_id == True %}
+            <h4><span class="badge bg-warning">Остатки</span></h4>
+          {% endif %}
+          {% if sku_dict|get_sales_tag:item.sku_id  == True %}
+            <h4><span class="badge bg-warning">Продажи</span></h4>
+          {% endif %}
           <a href="https://www.wildberries.ru/catalog/{{ item.sku_id }}/detail.aspx" class="btn btn-info">WB</a>
           <a href="https://mpstats.io/wb/item/{{ item.sku_id }}" class="btn btn-info">MP</a>
         </div>

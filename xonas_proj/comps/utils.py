@@ -20,7 +20,7 @@ HEADERS = {
     'Content-Type': 'application/json'
 }
 
-SKU_FIRST_DATE = 8
+SKU_FIRST_DATE = 30
 TOTAL_SALES = 20
 
 # Получаем все нужные нам даты 
@@ -63,7 +63,7 @@ def get_all_items(cat):
                             'dateFrom': f'{sku_first_date} 00:00:00',
                             'dateTo': 'null',
                             'filterType': 'date',
-                            'type': 'lessThan'
+                            'type': 'greaterThan'
                         },
                         'sales':
                         {  # Фильтр по количеству продаж
@@ -81,7 +81,6 @@ def get_all_items(cat):
 
 def update_db(cat):
     items = get_all_items(cat)
-    print(items)
     model_instances = [Sku(
         sku_id=record['id'],
         name=record['name'],
@@ -95,3 +94,57 @@ def update_db(cat):
         category=cat,
     ) for record in items]
     Sku.objects.bulk_create(model_instances)
+
+
+def check_sales_boost(item_sells_graph):
+    prev = 0
+    for x in item_sells_graph:
+        if x == 0:
+            continue
+        else:
+            prev = x
+            break
+    for x in item_sells_graph:
+        if x != 0:
+            if x >= prev * 5:
+                return False
+            prev = x
+    return True
+
+
+def check_avg_sales(item_sells_graph, avg_bench):
+    ''' Проверка: кол-во продаж не 0, есть три дня с
+    продажами, не больше 2-х дней с продажами ни ниже 
+    среднего.'''
+    check_zeros = 0
+    if sum(item_sells_graph) == 0:
+        return False
+    for x in item_sells_graph:
+        if x > 0:
+            check_zeros += 1
+    if check_zeros < 3:
+        return False
+    below_avg_c = 0
+    start = 0
+    for x in range(len(item_sells_graph)):
+        if item_sells_graph[x] != 0:
+            start = x
+    while start < len(item_sells_graph):
+        if item_sells_graph[start] < avg_bench:
+            below_avg_c += 1
+        if below_avg_c == 3:
+            return False
+        start += 1
+    return True
+
+
+def check_stocks(stocks_graph):
+    for x in range(len(stocks_graph)):
+        if stocks_graph[x] != 0:
+            start = x
+            start_stocks = stocks_graph[start]
+    while start < len(stocks_graph):
+        if stocks_graph[start] <= 0.3 * start_stocks:
+            return True
+        start += 1
+    return False

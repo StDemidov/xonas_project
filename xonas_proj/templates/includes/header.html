@@ -5,8 +5,8 @@
     </a>
     {% with request.resolver_match.view_name as view_name %}
     <ul class="nav nav-pills">
-        <li class="nav-item"><a href="{% url 'core:index' %}" class="nav-link {% if view_name == 'core:index' %} active {% endif %}" aria-current="page">Home</a></li>
-        <li class="nav-item"><a href="{% url 'comps:cats' %}" class="nav-link {% if view_name == 'comps:cats' %} active {% endif %}">Trends</a></li>
+        <li class="nav-item"><a href="{% url 'core:index' %}" class="nav-link {% if view_name == 'core:index' %} active {% endif %}" aria-current="page">Главная</a></li>
+        <li class="nav-item"><a href="{% url 'comps:cats' %}" class="nav-link {% if view_name == 'comps:cats' %} active {% endif %}">Категории</a></li>
     </ul>
     {% endwith %}
 </header>
