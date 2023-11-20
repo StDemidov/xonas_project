@@ -23,8 +23,13 @@ def get_stocks_graph(dic, key):
     return dic[key]['stocks_list']
 
 
+def get_dates(dic, key):
+    return dic[key]['dts']
+
+
 register.filter('get_price', get_price)
 register.filter('get_stocks_tag', get_stocks_tag)
 register.filter('get_sales_tag', get_sales_tag)
 register.filter('get_sales_graph', get_sales_graph)
 register.filter('get_stocks_graph', get_stocks_graph)
+register.filter('get_dates', get_dates)

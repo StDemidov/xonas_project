@@ -65,7 +65,7 @@ def cat_list(request, category_slug):
         if not check_sales_boost(sells_list):
             list_to_exclude.append(item)
             continue
-        dts = [today - dt.timedelta(days=x) for x in range(days)]
+        dts = [(today - dt.timedelta(days=x + 1)).strftime('%d') for x in range(days)]
         stat_dict[item.sku_id] = {}
         stat_dict[item.sku_id]['sells_list'] = sells_list
         stat_dict[item.sku_id]['stocks_list'] = stocks_list
@@ -73,12 +73,12 @@ def cat_list(request, category_slug):
         stat_dict[item.sku_id]['avg_sales'] = check_avg_sales(
             sells_list, chosen_category.min_sells
         )
-        stat_dict[item.sku_id]['stocks'] = check_stocks(stocks_list)  
+        stat_dict[item.sku_id]['stocks'] = check_stocks(stocks_list)
+        stat_dict[item.sku_id]['dts'] = dts[::-1]
     res = items_list.exclude(id__in=[x.id for x in list_to_exclude])
     context = {
         'page_obj': get_page_obj(res, request),
         'sku_dict': stat_dict,
         'days': days,
-        'dates': str(dts[::-1])
         }
     return render(request, template, context)

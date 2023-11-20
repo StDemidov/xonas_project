@@ -11,34 +11,6 @@
         <h5 class="card-title">{{ item.name }} </h5>
         <p class="card-title">{{ item.brand }}</p>
         <p class="card-title">{{ item.sku_first_date }}</p>
-        <div>
-          <canvas id="myChart{{ item.sku_id }}"></canvas>
-        </div>
-        
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        
-        <script>
-          var ctx = document.getElementById('myChart' + {{ item.sku_id }});
-        
-          new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-              datasets: [{
-                label: 'Продажи',
-                data: {{ sku_dict|get_sales_graph:item.sku_id }},
-                borderWidth: 1
-              }]
-            },
-            options: {
-              scales: {
-                y: {
-                  beginAtZero: true
-                }
-              }
-            }
-          });
-        </script>
         <div class="card-img-overlay">
           <h3><span class="badge bg-primary">{{ sku_dict|get_price:item.sku_id }} p.</span></h3>
           {% if sku_dict|get_stocks_tag:item.sku_id == True %}
@@ -51,6 +23,57 @@
           <a href="https://mpstats.io/wb/item/{{ item.sku_id }}" class="btn btn-info">MP</a>
         </div>
       </div>
-      
+      <div class="card">
+        <div>
+          <canvas id="myChart{{ item.sku_id }}" width="10" height="3"></canvas>
+        </div>
+        <div>
+          <canvas id="myChartY{{ item.sku_id }}" width="10" height="3"></canvas>
+        </div>
+      </div>   
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      
+      <script>
+        var ctx = document.getElementById('myChart' + {{ item.sku_id }});
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            datasets: [{
+              label: 'Продажи',
+              data: {{ sku_dict|get_sales_graph:item.sku_id|safe }},
+              borderWidth: 1
+            }],
+            labels: {{ sku_dict|get_dates:item.sku_id|safe }},
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        var ctx2 = document.getElementById('myChartY' + {{ item.sku_id }});
+        new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            datasets: [{
+              label: 'Остатки',
+              data: {{ sku_dict|get_stocks_graph:item.sku_id|safe }},
+              borderWidth: 1
+            }],
+            labels: {{ sku_dict|get_dates:item.sku_id|safe }},
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      </script>
 </div>
