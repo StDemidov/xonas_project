@@ -5,8 +5,18 @@
     </a>
     {% with request.resolver_match.view_name as view_name %}
     <ul class="nav nav-pills">
+        {% if user.is_authenticated %}
         <li class="nav-item"><a href="{% url 'core:index' %}" class="nav-link {% if view_name == 'core:index' %} active {% endif %}" aria-current="page">Главная</a></li>
         <li class="nav-item"><a href="{% url 'comps:cats' %}" class="nav-link {% if view_name == 'comps:cats' %} active {% endif %}">Категории</a></li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">{{ user.username }}</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="#">Избранное</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{% url 'logout' %}">Выйти</a></li>
+            </ul>
+        </li>
+        {% endif %}
     </ul>
     {% endwith %}
 </header>

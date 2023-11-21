@@ -1,4 +1,8 @@
+from django.contrib.auth import get_user_model
 from django.db import models
+
+
+User = get_user_model()
 
 
 class Category(models.Model):
@@ -53,5 +57,25 @@ class Sku(models.Model):
     )
 
     class Meta:
+        ordering = ['id']
         verbose_name = 'товар'
         verbose_name_plural = 'Товары'
+
+
+class Favorites(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь',
+        related_name='fav_users'
+    )
+    fav = models.ForeignKey(
+        Sku,
+        on_delete=models.CASCADE,
+        verbose_name='Понравившееся',
+        related_name='favs'
+    )
+
+    class Meta:
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранное'

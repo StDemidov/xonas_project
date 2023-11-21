@@ -17,10 +17,10 @@
         <div class="card-body">           
           <h5 class="card-title mid">{{ category }} </h5>
           <div class="btn-group">
-            <a href="{% url 'comps:list' category.slug%}?days=8" class="btn btn-primary">8 дней</a>
-            <a href="{% url 'comps:list' category.slug%}?days=14" class="btn btn-primary">14 дней</a>
-            <a href="{% url 'comps:list' category.slug%}?days=21" class="btn btn-primary">21 день</a>
-            <a href="{% url 'comps:list' category.slug%}?days=30" class="btn btn-primary">30 дней</a>
+            <a href="{% url 'comps:list' category.slug%}?days=8&page=1" class="btn btn-primary">8 дней</a>
+            <a href="{% url 'comps:list' category.slug%}?days=14&page=1" class="btn btn-primary">14 дней</a>
+            <a href="{% url 'comps:list' category.slug%}?days=21&page=1" class="btn btn-primary">21 день</a>
+            <a href="{% url 'comps:list' category.slug%}?days=30&page=1" class="btn btn-primary">30 дней</a>
           </div>
         </div>
       </div>

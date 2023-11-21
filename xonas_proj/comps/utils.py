@@ -35,6 +35,8 @@ month_ago = (today - dt.timedelta(days=31)).strftime('%Y.%m.%d')
 def get_page_obj(obj_list, request):
     paginator = Paginator(obj_list, 30)
     page_number = request.GET.get('page')
+    if not page_number:
+        page_number = request.session.get('page')
     page_object = paginator.get_page(page_number)
     return page_object
 

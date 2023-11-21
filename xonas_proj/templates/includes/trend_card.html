@@ -21,9 +21,17 @@
           {% endif %}
           <a href="https://www.wildberries.ru/catalog/{{ item.sku_id }}/detail.aspx" class="btn btn-info">WB</a>
           <a href="https://mpstats.io/wb/item/{{ item.sku_id }}" class="btn btn-info">MP</a>
+          <div>
+            
+          </div>
         </div>
       </div>
-      <div class="card">
+      <div class="card text-center">
+        {% if item in likes%}
+        <a href="#?days={{ days }}&id={{ item.id }}&page={{ page_obj.number }}" class="btn btn-secondary disabled">В избранном</a>
+        {% else %}
+        <a href="{% url 'comps:like' item.category.slug %}?days={{ days }}&id={{ item.id }}&page={{ page_obj.number }}" class="btn btn-info">В избранное</a>
+        {% endif %}
         <div>
           <canvas id="myChart{{ item.sku_id }}" width="10" height="3"></canvas>
         </div>
