@@ -1,6 +1,7 @@
 import requests as rq
 import pandas as pd
 import datetime as dt
+import statistics as st
 import os
 from dotenv import load_dotenv
 
@@ -58,7 +59,7 @@ def get_all_items(cat):
                         {  # Фильтр по количеству дней с продажами
                             'filterType': 'number',
                             'type': 'greaterThanOrEqual',
-                            'filter': 3                  
+                            'filter': 3
                         },
                         'sku_first_date':
                         {  # Чтоб получить только новинки поставим фильтр по SKU_first_date
@@ -82,20 +83,128 @@ def get_all_items(cat):
 
 
 def update_db(cat):
+    '''Функция для обновления БД.'''
+    # Получаем всю выгрузку по категории
     items = get_all_items(cat)
-    model_instances = [Sku(
-        sku_id=record['id'],
-        name=record['name'],
-        brand=record['brand'],
-        thumb=record['thumb'],
-        thumb_middle=record['thumb_middle'],
-        price_graph=','.join(str(x) for x in record['price_graph']),
-        sells_graph=','.join(str(x) for x in record['graph']),
-        stocks_graph=','.join(str(x) for x in record['stocks_graph']),
-        sku_first_date=dt.datetime.strptime(record['sku_first_date'], '%Y-%m-%d'),
-        category=cat,
-    ) for record in items]
+    model_instances = []
+    for record in items:
+        # Получаем графики цен для 4-х временных промежутков
+        price_graph = record['price_graph']
+        price_lists = [
+            price_graph[-8::],
+            price_graph[-14::],
+            price_graph[-21::],
+            price_graph,
+        ]
+        median_price = [0, 0, 0, 0]
+        i = 0
+        # Прогоняем цикл для подсчета медианных цен
+        for p_l in price_lists:
+            if (check_price_list(p_l)):
+                p_l_ex = [float(x) for x in p_l if x != '0']
+                median_price[i] = st.median(p_l_ex)
+            else:
+                median_price[i] = 0
+            i += 1
+        # Если хотя бы для одного промежутка выполняется условие
+        # То продолжаем обрабатывать товар
+        if not check_medians(median_price, cat):
+            continue
+        # Получаем графики продаж для 4-х временных промежутков
+        sells_graph = record['graph']
+        sells_lists = [
+            sells_graph[-8::],
+            sells_graph[-14::],
+            sells_graph[-21::],
+            sells_graph,
+        ]
+        sells_flags = [False, False, False, False]
+        boost_flags = [False, False, False, False]
+        i = 0
+        # Прогоняем цикл для проверки выполнения условий по продажам
+        for s_l in sells_lists:
+            sells_flags[i] = check_avg_sales(s_l, cat.min_sells)
+            boost_flags[i] = check_sales_boost(s_l)
+            i += 1
+        # Если хотя бы для одного промежутка выполняется условие
+        # То продолжаем обрабатывать товар
+        if not any(boost_flags):
+            continue
+        # Получаем графики остатков для 4-х временных промежутков
+        stocks_graph = record['stocks_graph']
+        stocks_lists = [
+            stocks_graph[-8::],
+            stocks_graph[-14::],
+            stocks_graph[-21::],
+            stocks_graph,
+        ]
+        stocks_flags = [False, False, False, False]
+        i = 0
+        # Прогоняем цикл для проверки выполнения условий по остаткам
+        for s_l in stocks_lists:
+            stocks_flags[i] = check_stocks(s_l)
+            i += 1
+        # Если хотя бы для одного промежутка выполняется условие
+        # То продолжаем обрабатывать товар
+        if not any(sells_flags) and not any(stocks_flags):
+            continue
+        # Если дошли до сюда, то можно сохранять товар в базу
+        model_instances.append(
+            Sku(
+                sku_id=record['id'],
+                name=record['name'],
+                brand=record['brand'],
+                thumb_middle=record['thumb_middle'],
+                sku_first_date=dt.datetime.strptime(
+                    record['sku_first_date'], '%Y-%m-%d'
+                ),
+                median_price8=median_price[0],
+                median_price14=median_price[1],
+                median_price21=median_price[2],
+                median_price30=median_price[3],
+                sells_graph8=','.join(str(x) for x in sells_lists[0]),
+                sells_graph14=','.join(str(x) for x in sells_lists[1]),
+                sells_graph21=','.join(str(x) for x in sells_lists[2]),
+                sells_graph30=','.join(str(x) for x in sells_lists[3]),
+                stocks_graph8=','.join(str(x) for x in stocks_lists[0]),
+                stocks_graph14=','.join(str(x) for x in stocks_lists[1]),
+                stocks_graph21=','.join(str(x) for x in stocks_lists[2]),
+                stocks_graph30=','.join(str(x) for x in stocks_lists[3]),
+                boost8=boost_flags[0],
+                boost14=boost_flags[1],
+                boost21=boost_flags[2],
+                boost30=boost_flags[3],
+                avg_sells8=sells_flags[0],
+                avg_sells14=sells_flags[1],
+                avg_sells21=sells_flags[2],
+                avg_sells30=sells_flags[3],
+                stocks8=stocks_flags[0],
+                stocks14=stocks_flags[1],
+                stocks21=stocks_flags[2],
+                stocks30=stocks_flags[3],
+                sells_stocks8=stocks_flags[0] or sells_flags[0],
+                sells_stocks14=stocks_flags[0] or sells_flags[0],
+                sells_stocks21=stocks_flags[0] or sells_flags[0],
+                sells_stocks30=stocks_flags[0] or sells_flags[0],
+                category=cat
+            )
+        )
     Sku.objects.bulk_create(model_instances)
+
+
+def check_price_list(price_list):
+    price_list = [float(x) for x in price_list if x != '0']
+    if len(price_list) == 0:
+        return False
+    return True
+
+
+def check_medians(medians, cat):
+    for x in medians:
+        if ((x >= cat.min_price) or
+           (x <= cat.max_price)):
+            return True
+    return False
 
 
 def check_sales_boost(item_sells_graph):
@@ -116,7 +225,7 @@ def check_sales_boost(item_sells_graph):
 
 def check_avg_sales(item_sells_graph, avg_bench):
     ''' Проверка: кол-во продаж не 0, есть три дня с
-    продажами, не больше 2-х дней с продажами ни ниже 
+    продажами, не больше 2-х дней с продажами ни ниже
     среднего.'''
     check_zeros = 0
     if sum(item_sells_graph) == 0:
@@ -141,10 +250,14 @@ def check_avg_sales(item_sells_graph, avg_bench):
 
 
 def check_stocks(stocks_graph):
+    start = 0
+    start_stocks = -1
     for x in range(len(stocks_graph)):
         if stocks_graph[x] != 0:
             start = x
             start_stocks = stocks_graph[start]
+    if start_stocks == -1:
+        return False
     while start < len(stocks_graph):
         if stocks_graph[start] <= 0.3 * start_stocks:
             return True

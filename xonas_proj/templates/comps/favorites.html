@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+Избранное
+{% endblock %}
+{% block content %}
+  {% for cat in cats %}
+  <h1 class="pb-2 mb-0">{{ cat }}</h1>
+  <div class="row">
+    {% for item in favs %}
+    {% if item.fav.category.name == cat%}
+      {% ifchanged %}
+        <div class="row mt-5" id="{{ item.category.slug }}">
+          <div class="col-12">
+            <h3>{{ item.category.name }}</h3>
+          </div>
+        </div>
+      {% endifchanged %}
+      {% include "includes/item_card_simple.html" %}
+    {% endif %}
+    {% endfor %}
+    {% include "includes/paginator.html" %}
+  </div>
+  <hr>
+  {% endfor %}
+{% endblock %}

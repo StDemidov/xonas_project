@@ -1,7 +1,7 @@
 {% load static %}
 {% load comps_extras %}
 <div class="col-6 col-md-4 my-1">
-    <div class="card">
+    <div class="card" id="{{ item.sku_id }}">
       <img 
         class="img-fluid card-img-top" 
         height="400" width="300"
@@ -12,11 +12,11 @@
         <p class="card-title">{{ item.brand }}</p>
         <p class="card-title">{{ item.sku_first_date }}</p>
         <div class="card-img-overlay">
-          <h3><span class="badge bg-primary">{{ sku_dict|get_price:item.sku_id }} p.</span></h3>
-          {% if sku_dict|get_stocks_tag:item.sku_id == True %}
+          <h3><span class="badge bg-primary">{{ item.median_price }} p.</span></h3>
+          {% if item.stocks == True %}
             <h4><span class="badge bg-warning">Остатки</span></h4>
           {% endif %}
-          {% if sku_dict|get_sales_tag:item.sku_id  == True %}
+          {% if item.avg_sells  == True %}
             <h4><span class="badge bg-warning">Продажи</span></h4>
           {% endif %}
           <a href="https://www.wildberries.ru/catalog/{{ item.sku_id }}/detail.aspx" class="btn btn-info">WB</a>
@@ -28,9 +28,9 @@
       </div>
       <div class="card text-center">
         {% if item in likes%}
-        <a href="#?days={{ days }}&id={{ item.id }}&page={{ page_obj.number }}" class="btn btn-secondary disabled">В избранном</a>
+        <a href="#" class="btn btn-secondary disabled">В избранном</a>
         {% else %}
-        <a href="{% url 'comps:like' item.category.slug %}?days={{ days }}&id={{ item.id }}&page={{ page_obj.number }}" class="btn btn-info">В избранное</a>
+        <a href="{% url 'comps:like' %}?id={{ item.id }}" class="btn btn-info">В избранное</a>
         {% endif %}
         <div>
           <canvas id="myChart{{ item.sku_id }}" width="10" height="3"></canvas>
@@ -50,10 +50,10 @@
           data: {
             datasets: [{
               label: 'Продажи',
-              data: {{ sku_dict|get_sales_graph:item.sku_id|safe }},
+              data: {{ item.sells_list|get_graph }},
               borderWidth: 1
             }],
-            labels: {{ sku_dict|get_dates:item.sku_id|safe }},
+            labels: {{ dts|safe }},
           },
           options: {
             scales: {
@@ -70,10 +70,10 @@
           data: {
             datasets: [{
               label: 'Остатки',
-              data: {{ sku_dict|get_stocks_graph:item.sku_id|safe }},
+              data: {{ item.stocks_list|get_graph }},
               borderWidth: 1
             }],
-            labels: {{ sku_dict|get_dates:item.sku_id|safe }},
+            labels: {{ dts|safe }},
           },
           options: {
             scales: {

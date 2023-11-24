@@ -12,15 +12,15 @@
         <img 
           class="img-fluid card-img-top" 
           height="200" width="100"
-          src="https://basket-10.wb.ru/vol1492/part149239/149239998/images/c246x328/1.webp"
+          src="{{category.img}}"
         >
         <div class="card-body">           
           <h5 class="card-title mid">{{ category }} </h5>
           <div class="btn-group">
-            <a href="{% url 'comps:list' category.slug%}?days=8&page=1" class="btn btn-primary">8 дней</a>
-            <a href="{% url 'comps:list' category.slug%}?days=14&page=1" class="btn btn-primary">14 дней</a>
-            <a href="{% url 'comps:list' category.slug%}?days=21&page=1" class="btn btn-primary">21 день</a>
-            <a href="{% url 'comps:list' category.slug%}?days=30&page=1" class="btn btn-primary">30 дней</a>
+            <a href="{% url 'comps:list8' category.slug%}" class="btn btn-primary">8 дней</a>
+            <a href="{% url 'comps:list14' category.slug%}" class="btn btn-primary">14 дней</a>
+            <a href="{% url 'comps:list21' category.slug%}" class="btn btn-primary">21 день</a>
+            <a href="{% url 'comps:list30' category.slug%}" class="btn btn-primary">30 дней</a>
           </div>
         </div>
       </div>
