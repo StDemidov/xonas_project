@@ -5,6 +5,7 @@ app_name = 'comps'
 
 urlpatterns = [
     path('', views.cats, name='cats'),
+    path('force_upd/', views.force_upd, name='force_upd'),
     path('list8/<slug:category_slug>', views.cat_list8, name='list8'),
     path('list14/<slug:category_slug>', views.cat_list14, name='list14'),
     path('list21/<slug:category_slug>', views.cat_list21, name='list21'),

@@ -31,9 +31,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'django_bootstrap5',
+    'widget_tweaks',
 
     'comps.apps.CompsConfig',
     'core.apps.CoreConfig',
+    'reports.apps.ReportsConfig'
 ]
 
 MIDDLEWARE = [

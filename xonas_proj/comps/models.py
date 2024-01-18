@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+import datetime as dt
 
 
 User = get_user_model()
+today = dt.datetime.today().date()
 
 
 class Category(models.Model):
@@ -19,7 +21,13 @@ class Category(models.Model):
         verbose_name='Максимальная цена'
     )
     min_sells = models.PositiveSmallIntegerField(
-        verbose_name='Мин. количество продаж в день'
+        verbose_name='Мин. сред. количество продаж'
+    )
+    fix_avg_sells = models.PositiveSmallIntegerField(
+        verbose_name='Фикс. сред. количество продаж'
+    )
+    min_total_sells = models.PositiveSmallIntegerField(
+        verbose_name='Мин. количество продаж'
     )
     id_wb = models.CharField(
         blank=True,
@@ -58,18 +66,54 @@ class Sku(models.Model):
     median_price30 = models.FloatField(verbose_name='Медианная цена 30 дней')
     sells_graph30 = models.TextField(verbose_name='Продажи 30 дней')
     stocks_graph30 = models.TextField(verbose_name='Остатки 30 дней')
-    boost8 = models.BooleanField(verbose_name='Флаг буста 8 дней')
-    boost14 = models.BooleanField(verbose_name='Флаг буста 14 дней')
-    boost21 = models.BooleanField(verbose_name='Флаг буста 21 день')
-    boost30 = models.BooleanField(verbose_name='Флаг буста 30 дней')
-    avg_sells8 = models.BooleanField(verbose_name='Флаг продаж 8 дней')
-    avg_sells14 = models.BooleanField(verbose_name='Флаг продаж 14 дней')
-    avg_sells21 = models.BooleanField(verbose_name='Флаг продаж 21 день')
-    avg_sells30 = models.BooleanField(verbose_name='Флаг продаж 30 дней')
-    stocks8 = models.BooleanField(verbose_name='Флаг остатков 8 дней')
-    stocks14 = models.BooleanField(verbose_name='Флаг остатков 8 дней')
-    stocks21 = models.BooleanField(verbose_name='Флаг остатков 8 дней')
-    stocks30 = models.BooleanField(verbose_name='Флаг остатков 8 дней')
+    min_avg_sells8 = models.BooleanField(
+        blank=True,
+        verbose_name='Критерий минимального среднего 8 дней')
+    min_avg_sells14 = models.BooleanField(
+        blank=True,
+        verbose_name='Критерий минимального среднего 14 дней')
+    min_avg_sells21 = models.BooleanField(
+        blank=True,
+        verbose_name='Критерий минимального среднего 21 день')
+    min_avg_sells30 = models.BooleanField(
+        blank=True,
+        verbose_name='Критерий минимального среднего 30 дней')
+    fix_avg_8 = models.BooleanField(
+        blank=True,
+        verbose_name='Фиксированные средние продажи 8 дней')
+    fix_avg_14 = models.BooleanField(
+        blank=True,
+        verbose_name='Фиксированные средние продажи 14 дней')
+    fix_avg_21 = models.BooleanField(
+        blank=True,
+        verbose_name='Фиксированные средние продажи 21 день')
+    fix_avg_30 = models.BooleanField(
+        blank=True,
+        verbose_name='Фиксированные средние продажи 30 дней')
+    avg_sells_growth8 = models.BooleanField(
+        blank=True,
+        verbose_name='Флаг роста продаж 8 дней')
+    avg_sells_growth14 = models.BooleanField(
+        blank=True,
+        verbose_name='Флаг роста продаж 14 дней')
+    avg_sells_growth21 = models.BooleanField(
+        blank=True,
+        verbose_name='Флаг роста продаж 21 день')
+    avg_sells_growth30 = models.BooleanField(
+        blank=True,
+        verbose_name='Флаг роста продаж 30 дней')
+    stocks8 = models.BooleanField(
+        blank=True,
+        verbose_name='Флаг остатков 8 дней')
+    stocks14 = models.BooleanField(
+        blank=True,
+        verbose_name='Флаг остатков 8 дней')
+    stocks21 = models.BooleanField(
+        blank=True,
+        verbose_name='Флаг остатков 8 дней')
+    stocks30 = models.BooleanField(
+        blank=True,
+        verbose_name='Флаг остатков 8 дней')
     sells_stocks8 = models.BooleanField(
         verbose_name='Флаг продаж/стоков 8 дней'
     )
@@ -93,6 +137,14 @@ class Sku(models.Model):
         related_name='skus',
         verbose_name='Категория'
     )
+    revenue = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name='Выручка'
+    )
+    turnover_days = models.PositiveIntegerField(
+        verbose_name='Оборачиваемость'
+    )
+    gender = models.CharField(max_length=32, verbose_name='Пол')
 
     class Meta:
         ordering = ['id']
@@ -110,13 +162,36 @@ class Favorites(models.Model):
         verbose_name='Пользователь',
         related_name='fav_users'
     )
-    fav = models.ForeignKey(
-        Sku,
+
+    sku_id = models.CharField(max_length=32, verbose_name='SKU', blank=True)
+    name = models.CharField(max_length=256, verbose_name='Наименование', blank=True)
+    brand = models.CharField(max_length=64, verbose_name='Бренд', blank=True)
+    thumb_middle = models.CharField(max_length=256, verbose_name='Картинка 1', blank=True)
+    sku_first_date = models.DateTimeField(verbose_name='Дата появления', default=today)
+    category = models.ForeignKey(
+        Category,
         on_delete=models.CASCADE,
-        verbose_name='Понравившееся',
-        related_name='favs'
+        related_name='favs',
+        verbose_name='Категория',
+        blank=True
     )
 
     class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
+
+
+class ExcBrands(models.Model):
+    brand = models.CharField(max_length=64, verbose_name='Бренд')
+
+    class Meta:
+        verbose_name = 'Исключенный бренд'
+        verbose_name_plural = 'Исключенные бренды'
+    
+
+class ExcNaming(models.Model):
+    word = models.CharField(max_length=128, verbose_name='Слово исключение')
+
+    class Meta:
+        verbose_name = 'Слова-исключения для названия'
+        verbose_name_plural = 'Слова-исключения для названия'

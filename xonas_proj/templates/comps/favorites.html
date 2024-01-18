@@ -8,7 +8,7 @@
   <h1 class="pb-2 mb-0">{{ cat }}</h1>
   <div class="row">
     {% for item in favs %}
-    {% if item.fav.category.name == cat%}
+    {% if item.category.name == cat%}
       {% ifchanged %}
         <div class="row mt-5" id="{{ item.category.slug }}">
           <div class="col-12">

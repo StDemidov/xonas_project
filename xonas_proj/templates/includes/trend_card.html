@@ -11,13 +11,18 @@
         <h5 class="card-title">{{ item.name }} </h5>
         <p class="card-title">{{ item.brand }}</p>
         <p class="card-title">{{ item.sku_first_date }}</p>
+        <p class="card-title">Выручка: {{ item.revenue }} руб.</p>
+        <p class="card-title">Оборачиваемость: {{ item.turnover_days }} д.</p>
         <div class="card-img-overlay">
           <h3><span class="badge bg-primary">{{ item.median_price }} p.</span></h3>
           {% if item.stocks == True %}
-            <h4><span class="badge bg-warning">Остатки</span></h4>
+            <h4><span class="badge bg-success">Остатки</span></h4>
           {% endif %}
-          {% if item.avg_sells  == True %}
-            <h4><span class="badge bg-warning">Продажи</span></h4>
+          {% if item.avg_sells_growth  == True %}
+            <h4><span class="badge bg-success">Рост среднего</span></h4>
+          {% endif %}
+          {% if item.fix_avg  == True %}
+            <h4><span class="badge bg-warning">Фикс. среднее</span></h4>
           {% endif %}
           <a href="https://www.wildberries.ru/catalog/{{ item.sku_id }}/detail.aspx" class="btn btn-info">WB</a>
           <a href="https://mpstats.io/wb/item/{{ item.sku_id }}" class="btn btn-info">MP</a>
@@ -27,7 +32,7 @@
         </div>
       </div>
       <div class="card text-center">
-        {% if item in likes%}
+        {% if item.sku_id in likes %}
         <a href="#" class="btn btn-secondary disabled">В избранном</a>
         {% else %}
         <a href="{% url 'comps:like' %}?id={{ item.id }}" class="btn btn-info">В избранное</a>

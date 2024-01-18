@@ -1,5 +1,6 @@
 import requests as rq
 import pandas as pd
+import numpy as np
 import datetime as dt
 import statistics as st
 import os
@@ -7,7 +8,7 @@ from dotenv import load_dotenv
 
 from django.core.paginator import Paginator
 
-from .models import Sku
+from .models import Sku, ExcBrands, ExcNaming
 
 load_dotenv()
 
@@ -22,11 +23,12 @@ HEADERS = {
 }
 
 SKU_FIRST_DATE = 30
-TOTAL_SALES = 20
 
 # Получаем все нужные нам даты 
 today = dt.datetime.today().date()
-sku_first_date = (today - dt.timedelta(days=SKU_FIRST_DATE+1)).strftime('%Y-%m-%d')
+sku_first_date = (today - dt.timedelta(days=SKU_FIRST_DATE+1)).strftime(
+    '%Y-%m-%d'
+)
 yesterday = (today - dt.timedelta(days=1)).strftime('%Y.%m.%d')
 two_weeks = (today - dt.timedelta(days=15)).strftime('%Y.%m.%d')
 three_weeks = (today - dt.timedelta(days=22)).strftime('%Y.%m.%d')
@@ -48,13 +50,7 @@ def get_all_items(cat):
     payload = {
         'startRow': 0,
         'endRow': 5000,
-        'filterModel': {'final_price':
-                        {  # Фильтр по последней цене
-                            'filterType': 'number',
-                            'type': 'inRange',
-                            'filter': int(cat.min_price),
-                            'filterTo': int(cat.max_price)
-                        },
+        'filterModel': {
                         'days_with_sales':
                         {  # Фильтр по количеству дней с продажами
                             'filterType': 'number',
@@ -62,7 +58,7 @@ def get_all_items(cat):
                             'filter': 3
                         },
                         'sku_first_date':
-                        {  # Чтоб получить только новинки поставим фильтр по SKU_first_date
+                        {  # Поставим фильтр по SKU_first_date
                             'dateFrom': f'{sku_first_date} 00:00:00',
                             'dateTo': 'null',
                             'filterType': 'date',
@@ -72,7 +68,7 @@ def get_all_items(cat):
                         {  # Фильтр по количеству продаж
                             'filterType': 'number',
                             'type': 'greaterThanOrEqual',
-                            'filter': TOTAL_SALES
+                            'filter': cat.min_total_sells
                         }
                         },
         'sortModel': [{'colId': 'revenue', 'sort': 'desc'}]
@@ -86,9 +82,23 @@ def update_db(cat):
     '''Функция для обновления БД.'''
     # Получаем всю выгрузку по категории
     items = get_all_items(cat)
+    banned_brands = ExcBrands.objects.all()
+    bb_list = [x.brand.lower() for x in banned_brands]
+    banned_words = ExcNaming.objects.all()
+    bw_list = [x.word.lower() for x in banned_words]
     model_instances = []
+    print(items[0])
     for record in items:
         # Получаем графики цен для 4-х временных промежутков
+        if record['brand'].lower() in bb_list:
+            continue
+        skip = False
+        for word in bw_list:
+            if word.lower() in record['name'].lower():
+                skip = True
+                break
+        if skip:
+            continue
         price_graph = record['price_graph']
         price_lists = [
             price_graph[-8::],
@@ -101,7 +111,7 @@ def update_db(cat):
         # Прогоняем цикл для подсчета медианных цен
         for p_l in price_lists:
             if (check_price_list(p_l)):
-                p_l_ex = [float(x) for x in p_l if x != '0']
+                p_l_ex = [float(x) for x in p_l if x != 0]
                 median_price[i] = st.median(p_l_ex)
             else:
                 median_price[i] = 0
@@ -118,17 +128,23 @@ def update_db(cat):
             sells_graph[-21::],
             sells_graph,
         ]
-        sells_flags = [False, False, False, False]
-        boost_flags = [False, False, False, False]
+        min_avg_flags = [False, False, False, False]
+        fix_avg_flags = [False, False, False, False]
+        sells_growth_flags = [False, False, False, False]
         i = 0
         # Прогоняем цикл для проверки выполнения условий по продажам
         for s_l in sells_lists:
-            sells_flags[i] = check_avg_sales(s_l, cat.min_sells)
-            boost_flags[i] = check_sales_boost(s_l)
+            min_avg_flags[i] = check_min_avg_sells(s_l, cat.min_sells)
+            fix_avg_flags[i] = check_fix_avg(
+                s_l, price_lists[i], median_price[i], cat.fix_avg_sells
+            )
+            sells_growth_flags[i] = check_avg_sales_growth(
+                s_l, price_lists[i], median_price[i]
+            )
             i += 1
         # Если хотя бы для одного промежутка выполняется условие
         # То продолжаем обрабатывать товар
-        if not any(boost_flags):
+        if not any(min_avg_flags):
             continue
         # Получаем графики остатков для 4-х временных промежутков
         stocks_graph = record['stocks_graph']
@@ -146,7 +162,15 @@ def update_db(cat):
             i += 1
         # Если хотя бы для одного промежутка выполняется условие
         # То продолжаем обрабатывать товар
-        if not any(sells_flags) and not any(stocks_flags):
+        comb_flags = []
+        
+        for i in range(4):
+            comb_flags.append(
+                min_avg_flags[i] and (stocks_flags[i]
+                                      or fix_avg_flags[i]
+                                      or sells_growth_flags[i])
+            )
+        if not any(comb_flags):
             continue
         # Если дошли до сюда, то можно сохранять товар в базу
         model_instances.append(
@@ -170,30 +194,37 @@ def update_db(cat):
                 stocks_graph14=','.join(str(x) for x in stocks_lists[1]),
                 stocks_graph21=','.join(str(x) for x in stocks_lists[2]),
                 stocks_graph30=','.join(str(x) for x in stocks_lists[3]),
-                boost8=boost_flags[0],
-                boost14=boost_flags[1],
-                boost21=boost_flags[2],
-                boost30=boost_flags[3],
-                avg_sells8=sells_flags[0],
-                avg_sells14=sells_flags[1],
-                avg_sells21=sells_flags[2],
-                avg_sells30=sells_flags[3],
+                min_avg_sells8=min_avg_flags[0],
+                min_avg_sells14=min_avg_flags[1],
+                min_avg_sells21=min_avg_flags[2],
+                min_avg_sells30=min_avg_flags[3],
+                fix_avg_8=fix_avg_flags[0],
+                fix_avg_14=fix_avg_flags[1],
+                fix_avg_21=fix_avg_flags[2],
+                fix_avg_30=fix_avg_flags[3],
+                avg_sells_growth8=sells_growth_flags[0],
+                avg_sells_growth14=sells_growth_flags[1],
+                avg_sells_growth21=sells_growth_flags[2],
+                avg_sells_growth30=sells_growth_flags[3],
                 stocks8=stocks_flags[0],
                 stocks14=stocks_flags[1],
                 stocks21=stocks_flags[2],
                 stocks30=stocks_flags[3],
-                sells_stocks8=stocks_flags[0] or sells_flags[0],
-                sells_stocks14=stocks_flags[0] or sells_flags[0],
-                sells_stocks21=stocks_flags[0] or sells_flags[0],
-                sells_stocks30=stocks_flags[0] or sells_flags[0],
-                category=cat
+                sells_stocks8=comb_flags[0],
+                sells_stocks14=comb_flags[1],
+                sells_stocks21=comb_flags[2],
+                sells_stocks30=comb_flags[3],
+                category=cat,
+                revenue=record['revenue'],
+                gender=record['gender'],
+                turnover_days=record['turnover_days']
             )
         )
     Sku.objects.bulk_create(model_instances)
 
 
 def check_price_list(price_list):
-    price_list = [float(x) for x in price_list if x != '0']
+    price_list = [float(x) for x in price_list if x != 0]
     if len(price_list) == 0:
         return False
     return True
@@ -207,59 +238,140 @@ def check_medians(medians, cat):
     return False
 
 
-def check_sales_boost(item_sells_graph):
-    prev = 0
-    for x in item_sells_graph:
-        if x == 0:
-            continue
-        else:
-            prev = x
-            break
-    for x in item_sells_graph:
-        if x != 0:
-            if x >= prev * 5:
-                return False
-            prev = x
-    return True
-
-
-def check_avg_sales(item_sells_graph, avg_bench):
-    ''' Проверка: кол-во продаж не 0, есть три дня с
-    продажами, не больше 2-х дней с продажами ни ниже
-    среднего.'''
+def check_avg_sales_growth(item_sells_graph, price_graph, med_price):
+    ''' Проверка на рост средних продаж.'''
     check_zeros = 0
+    # Проверяем, не все ли по нулям
     if sum(item_sells_graph) == 0:
         return False
+    # Смотрим, если кол-во дней с продажами <5 то и проверять нечего
     for x in item_sells_graph:
         if x > 0:
             check_zeros += 1
-    if check_zeros < 3:
+    if check_zeros < 5:
         return False
-    below_avg_c = 0
+    # Ищем первый день, когда появились продажи
     start = 0
     for x in range(len(item_sells_graph)):
         if item_sells_graph[x] != 0:
             start = x
-    while start < len(item_sells_graph):
-        if item_sells_graph[start] < avg_bench:
-            below_avg_c += 1
-        if below_avg_c == 3:
-            return False
-        start += 1
-    return True
+            break
+    list_wo_z = item_sells_graph[start::]
+    price_g_new = price_graph[start::]
+    # Рассчитываем СКО + предельные отклонения
+    std_metric = np.std(list_wo_z)
+    boost = st.mean(list_wo_z) + 2 * std_metric
+    drop = st.mean(list_wo_z) - 2 * std_metric
+    # Рассчитаем среднее первых 4-х дней
+    count = 0
+    sum_l = 0
+    avg_first_4 = 0
+    x = 0
+    while x < len(list_wo_z):
+        if price_g_new[x] > 2 * med_price:
+            x += 1
+            continue
+        if list_wo_z[x] < boost and list_wo_z[x] > drop:
+            sum_l += list_wo_z[x]
+            count += 1
+        if count == 4:
+            avg_first_4 = sum_l / count
+        x += 1
+    if count <= 4:
+        return False
+    elif sum_l / count > avg_first_4:
+        return True
+    return False
+
+
+def check_fix_avg(item_sells_graph, price_graph, med_price, avg_fix):
+    ''' Проверка на фикс средние продажи.'''
+    # Проверяем, не все ли по нулям
+    if sum(item_sells_graph) == 0:
+        return False
+    start = 0
+    for x in range(len(item_sells_graph)):
+        if item_sells_graph[x] != 0:
+            start = x
+            break
+    list_wo_z = item_sells_graph[start::]
+    price_g_new = price_graph[start::]
+    # Рассчитываем СКО + предельные отклонения
+    std_metric = np.std(list_wo_z)
+    boost = st.mean(list_wo_z) + 2 * std_metric
+    drop = st.mean(list_wo_z) - 2 * std_metric
+    count = 0
+    sum_l = 0
+    x = 0
+    while x < len(list_wo_z):
+        if price_g_new[x] > 2 * med_price:
+            x += 1
+            continue
+        if list_wo_z[x] < boost and list_wo_z[x] > drop:
+            sum_l += list_wo_z[x]
+            count += 1
+        x += 1
+    if count == 0:
+        return False
+    if sum_l / count >= avg_fix:
+        return True
+    return False
+
+
+def check_stocks_rev(stocks_graph):
+    '''Проверка на высохшие остатки c конца.'''
+    start_stocks = -1
+    for x in range(len(stocks_graph)):
+        if stocks_graph[x] != 0:
+            start_stocks = stocks_graph[x]
+            break
+    if start_stocks == -1:
+        return False
+    rev_list = stocks_graph[::-1]
+    x = 1
+    while x < len(rev_list):
+        if rev_list[x-1] <= rev_list[x]:
+            x += 1
+            continue
+        else:
+            if (rev_list[x] <= 1.3 * rev_list[x-1]
+               and rev_list[0] <= 0.3 * rev_list[x-1]):
+                return True
+        x += 1
+    return False
 
 
 def check_stocks(stocks_graph):
+    '''Проверка на высохшие остатки c начала.'''
     start = 0
     start_stocks = -1
     for x in range(len(stocks_graph)):
         if stocks_graph[x] != 0:
+            start_stocks = stocks_graph[x]
             start = x
-            start_stocks = stocks_graph[start]
+            break
     if start_stocks == -1:
         return False
+    prev = start_stocks
     while start < len(stocks_graph):
         if stocks_graph[start] <= 0.3 * start_stocks:
             return True
+        elif stocks_graph[start] >= 1.3 * prev:
+            start_stocks = stocks_graph[start]
+        prev = stocks_graph[start]
         start += 1
+    return False
+
+
+def check_min_avg_sells(item_sells_graph, min_avg_bench):
+    '''Первичная проверка на средние продажи'''
+    if sum(item_sells_graph) == 0:
+        return False
+    for x in range(len(item_sells_graph)):
+        if item_sells_graph[x] != 0:
+            start = x
+            break
+    avg = st.mean(item_sells_graph[start::])
+    if avg >= min_avg_bench:
+        return True
     return False

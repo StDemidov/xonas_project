@@ -1,21 +1,40 @@
 {% extends "base.html" %}
+{% load django_bootstrap5 %}
 {% load static %}
 {% block title %}
 Список
 {% endblock %}
 {% block content %}
-  <h1 class="pb-2 mb-0">{{ page_obj.category.name }}</h1>
-  <div class="row">
-    {% for item in page_obj %}
-      {% ifchanged %}
-        <div class="row mt-5" id="{{ item.category.slug }}">
-          <div class="col-12">
-            <h3>{{ item.category.name }}</h3>
-          </div>
+  <div class="col">
+    <h2 class="pb-2 mb-0">Фильтры
+        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+          >
+        </button>
+      </h2>
+      <div class="collapse" id="collapseExample">
+        <div class="card card-body">
+          <form method="GET"> 
+            <div class="row g-2">
+            {{ myFilter.form }}
+            <button class="btn btn-primary" type="submit">Применить</button>
+            </div>
+          </form>
         </div>
-      {% endifchanged %}
-      {% include "includes/trend_card.html" %}
-    {% endfor %}
-    {% include "includes/paginator.html" %}
+      </div>
+    
+    <h1 class="pb-2 mb-0">{{ page_obj.category.name }}</h1>
+    <div class="row">
+      {% for item in page_obj %}
+        {% ifchanged %}
+          <div class="row mt-5" id="{{ item.category.slug }}">
+            <div class="col-12">
+              <h3>{{ item.category.name }}</h3>
+            </div>
+          </div>
+        {% endifchanged %}
+        {% include "includes/trend_card.html" %}
+      {% endfor %}
+      {% include "includes/paginator.html" %}
+    </div>
   </div>
 {% endblock %}

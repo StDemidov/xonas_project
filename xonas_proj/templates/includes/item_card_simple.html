@@ -4,16 +4,16 @@
       <img 
         class="img-fluid card-img-top" 
         height="400" width="300"
-        src="https:{{ item.fav.thumb_middle }}"
+        src="https:{{ item.thumb_middle }}"
       >
       <div class="card-body">           
-        <h5 class="card-title">{{ item.fav.name }} </h5>
-        <p class="card-title">{{ item.fav.brand }}</p>
-        <p class="card-title">{{ item.fav.sku_first_date }}</p>
+        <h5 class="card-title">{{ item.name }} </h5>
+        <p class="card-title">{{ item.brand }}</p>
+        <p class="card-title">{{ item.sku_first_date }}</p>
         
         <div class="card-img-overlay">
-          <a href="https://www.wildberries.ru/catalog/{{ item.fav.sku_id }}/detail.aspx" class="btn btn-info">WB</a>
-          <a href="https://mpstats.io/wb/item/{{ item.fav.sku_id }}" class="btn btn-info">MP</a>
+          <a href="https://www.wildberries.ru/catalog/{{ item.sku_id }}/detail.aspx" class="btn btn-info">WB</a>
+          <a href="https://mpstats.io/wb/item/{{ item.ssku_id }}" class="btn btn-info">MP</a>
         </div>
         <div class="card text-center">
           <a href="{% url 'comps:like_del' item.id  %}" class="btn btn-info">Удалить</a>

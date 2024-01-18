@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}
-  Категории
+  Новинки
 {% endblock %}
 {% block content %}
   <h1 class="pb-2 mb-0">Категории</h1>
@@ -9,11 +9,13 @@
     {% for category in category_list %}
     <div class="col-9 col-md-3 my-1">
       <div class="card text-center">
+        {% with src='img/longs.jpg' %}
         <img 
           class="img-fluid card-img-top" 
           height="200" width="100"
-          src="{{category.img}}"
+          src="{% static category.img %}"
         >
+        {% endwith%}
         <div class="card-body">           
           <h5 class="card-title mid">{{ category }} </h5>
           <div class="btn-group">
@@ -26,5 +28,12 @@
       </div>
     </div>
     {% endfor %}
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col text-center">
+  <a href="{% url 'comps:force_upd'%}" class="btn btn-danger">Обновить БД</a>
+      </div>
+    </div>
   </div>
 {% endblock %}
