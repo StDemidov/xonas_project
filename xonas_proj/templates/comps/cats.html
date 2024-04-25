@@ -9,13 +9,11 @@
     {% for category in category_list %}
     <div class="col-9 col-md-3 my-1">
       <div class="card text-center">
-        {% with src='img/longs.jpg' %}
         <img 
           class="img-fluid card-img-top" 
           height="200" width="100"
           src="{% static category.img %}"
         >
-        {% endwith%}
         <div class="card-body">           
           <h5 class="card-title mid">{{ category }} </h5>
           <div class="btn-group">

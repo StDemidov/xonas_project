@@ -24,6 +24,7 @@ def reports(request):
             headers = {'Authorization': ip_token}
             full_url = REPORT_URL + f'dateFrom={from_date}&dateTo={to_date}&rrdid=0&limit=100000'
             query = rq.get(full_url, headers=headers).json()
+            print(full_url)
             df = pd.json_normalize(query)
             df = df.rename(
                 columns={

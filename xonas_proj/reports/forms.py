@@ -12,7 +12,22 @@ class ReportForm(forms.Form):
         label='Дата окончания отчета',
     )
     ip = forms.ChoiceField(
-        choices=(('Kochergin', 'Кочергин'), ('Tishka', 'Tishka')),
+        choices=(
+            ('Kochergin', 'Кочергин'),
+            ('Tishka', 'Tishka'),
+            ('Hanisenko', 'Ханисенко'),
+            ('Dementeva', 'Дементьева'),
+            ('Shershunov', 'Шершунов'),
+            ('Kolmikov', 'Колмыков'),
+            ('Kalinin', 'Калинин'),
+            ('Yurtaikina', 'Юртайкина'),
+            ('Grachev', 'Грачев'),
+            ('Beloglintsev', 'Белоглинцев'),
+            ('Ageeva', 'Агеева'),
+            ('Skotnikova', 'Скотникова'),
+            ('Galibin', 'Галибин'),
+            ('Ignatovich', 'Игнатович'),
+            ),
         label='Выберите ИП',
     )
 
